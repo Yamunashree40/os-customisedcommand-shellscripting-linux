@@ -1,0 +1,458 @@
+#!/bin/bash
+function vsyn_usage {
+    echo "Usage: vsyn [OPTIONS]..."
+    echo "Options:"
+    echo "  -h, --help             Display this help message and exit"
+    echo "  -v, --version          Display version information and exit"
+    echo "  -l, --list             List all files in the current directory"
+    echo "  -c, --count            Count the number of files in the current directory"
+    echo "  -f, --find FILENAME    Search for a file with the specified name"
+    echo "  -e, --extension EXT    List all files with the specified extension"
+    echo "  -s, --size SIZE        List all files with a size greater than the specified value"
+    echo "  -u, --user USER        List all files owned by the specified user"
+    echo "  -g, --group GROUP      List all files owned by the specified group"
+    echo "  -o, --order ORDER      Order the output by name, size, or modification time"
+    echo "  -p, --permissions      Display the permissions of all files"
+    echo "  -m, --modify FILE      Display the modification time of the specified file"
+    echo "  -n, --newer FILE       List all files modified after the specified file"
+    echo "  -d, --delete FILE      Delete the specified file"
+    echo "  -t, --type TYPE        List all files of the specified type (file/directory/link)"
+    echo "  -i, --info             Display system information"
+    echo "  -x, --execute CMD      Run a command on all files in the current directory"
+    echo "  -b, --backup FILE      Create a backup of the specified file"
+    echo "  -y, --sync DIR1 DIR2   Sync the contents of two directories"
+    echo "  -z, --compress FILE    Compress the specified file"
+    echo "  -U, --uncompress FILE  Uncompress the specified file"
+    echo "  -a, --archive          Create an archive of all files in the current directory"
+    echo "  -j, --extract FILE     Extract the specified archive"
+    echo "  -w, --watch FILE       Watch the specified file for changes"
+    echo "  -k, --kill PID         Kill the specified process"
+    echo "  -P, --listp            list currently running processes"
+    echo "  -q, --query            Query the status of the specified service"
+    echo "  -O, --open FILE        Open the specified file"
+    echo "  -g, --git              Initialize a new Git repository in the current directory"
+    echo "  -H, --hidden           Display hidden files."
+    echo "  -r, --update           Update the system"
+}
+
+function vsyn_version {
+    echo "vsyn version 1.0"
+}
+
+function vsyn_list_files {
+    ls
+}
+
+function vsyn_count_files {
+    ls | wc -l
+}
+
+function vsyn_find_file { 
+if [ -z "$1" ]
+    then
+        echo "Please provide a filename to search for."
+    else
+        find . -name "$1"
+    fi
+}
+
+function vsyn_list_by_extension {
+    if [ -z "$1" ]
+    then
+        echo "Please provide a file extension."
+    else
+        find . -name "*.$1"
+    fi
+}
+
+function vsyn_list_by_size {
+    if [ -z "$1" ]
+    then
+        echo "Please provide a size value."
+    else
+        find . -size +"$1"c
+    fi
+}
+
+function vsyn_list_by_user {
+    if [ -z "$1" ]
+    then
+        echo "Please provide a username."
+    else
+        find . -user "$1"
+    fi
+}
+
+function vsyn_list_by_group {
+    if [ -z "$1" ]
+    then
+        echo "Please provide a group name."
+    else
+        find . -group "$1"
+    fi
+}
+
+function vsyn_order {
+    if [ -z "$1" ]
+    then
+        echo "Please provide an order type (name, size, or time)."
+    else
+        case $1 in
+            name) ls | sort ;;
+            size) ls -S ;;
+            time) ls -t ;;
+            *) echo "Invalid order type. Please use name, size, or time." ;;
+        esac
+    fi
+}
+
+function vsyn_permissions {
+    ls -l
+}
+
+function vsyn_modify_time {
+    if [ -z "$1" ]
+    then
+        echo "Please provide a filename."
+    else
+        stat -c %y "$1"
+    fi
+}
+
+function vsyn_list_newer {
+    if [ -z "$1" ]
+    then
+        echo "Please provide a filename."
+    else
+        find . -newer "$1"
+    fi
+}
+function vsyn_delete_file {
+    if [ -z "$1" ]
+    then
+        echo "Please provide a filename."
+    else
+        rm "$1"
+    fi
+}
+
+function vsyn_list_by_type {
+    if [ -z "$1" ]
+    then
+        echo "Please provide a type (file, directory, or link)."
+    else
+        case $1 in
+            file) find . -type f ;;
+            directory) find . -type d ;;
+            link) find . -type l ;;
+            *) echo "Invalid type. Please use file, directory, or link." ;;
+        esac
+    fi
+}
+
+function vsyn_system_info {
+    echo "Operating System: $(uname -o)"
+    echo "Kernel Version: $(uname -r)"
+    echo "CPU Info: $(cat /proc/cpuinfo | grep 'model name' | uniq)"
+    echo "Memory Info: $(free -h | grep 'Mem' | awk '{print $2}')"
+    echo "Disk Space: $(df -h | grep '/dev/' | awk '{print $2 " used: " $3 "/" $4}')"
+}
+
+function vsyn_execute_command {
+    if [ -z "$1" ]
+    then
+        echo "Please provide a command."
+    else
+        for file in *
+        do
+            $1 "$file"
+        done
+    fi
+}
+
+function vsyn_backup_file {
+    if [ -z "$1" ]
+    then
+        echo "Please provide a filename."
+    else
+        cp "$1" "$1.bak"
+    fi
+}
+
+function vsyn_sync_directories {
+    if [ -z "$1" ] || [ -z "$2" ]
+    then
+        echo "Please provide two directories to sync."
+    else
+        rsync -av "$1/" "$2"
+    fi
+}
+
+function vsyn_compress_file {
+    if [ -z "$1" ]
+    then
+        echo "Please provide a filename."
+    else
+        if [ -z "$2" ]
+        then
+            gzip "$1"
+        else
+            case $2 in
+                gzip) gzip "$1" ;;
+                bzip2) bzip2 "$1" ;;
+                xz) xz "$1" ;;
+                *) echo "Invalid compression type. Please use gzip, bzip2, or xz." ;;
+            esac
+        fi
+    fi
+}
+
+function vsyn_uncompress_file {
+    if [ -z "$1" ]
+    then
+        echo "Please provide a file to uncompress."
+    else
+        if [[ "$1" == *.gz ]]
+        then
+            gunzip "$1"
+        elif [[ "$1" == *.bz2 ]]
+        then
+            bunzip2 "$1"
+        elif [[ "$1" == *.zip ]]
+        then
+            unzip "$1"
+        else
+            echo "Unknown file format. Please provide a .gz, .bz2, or .zip file."
+        fi
+    fi
+}
+
+function vsyn_create_archive {
+    tar czvf archive.tar.gz *
+}
+
+function vsyn_extract_archive {
+    if [ -z "$1" ]
+    then
+        echo "Please provide an archive to extract."
+    else
+        if [[ "$1" == *.tar.gz ]]
+        then
+            tar xzvf "$1"
+        elif [[ "$1" == *.tar.bz2 ]]
+        then
+            tar xjvf "$1"
+        elif [[ "$1" == *.zip ]]
+        then
+            unzip "$1"
+        else
+            echo "Unknown file format. Please provide a .tar.gz, .tar.bz2, or .zip file."
+        fi
+    fi
+}
+
+function vsyn_watch_file {
+    if [ -z "$1" ]
+    then
+        echo "Please provide a file to watch."
+    else
+        tail -f "$1"
+    fi
+}
+
+function vsyn_kill_process {
+    if [ -z "$1" ]
+    then
+        echo "Please provide a process ID to kill."
+    else
+        kill "$1"
+    fi
+}
+function vsyn_query_service {
+    if [ -z "$1" ]
+    then
+        echo "Please provide a service to query."
+    else
+        systemctl status "$1"
+    fi
+}
+
+function vsyn_open_file {
+    if [ -z "$1" ]
+    then
+        echo "Please provide a file to open."
+    else
+        xdg-open "$1"
+    fi
+}
+
+function vsyn_initialize_git {
+    git init
+}
+
+function vsyn_display_hidden {
+	ls -a
+}
+
+function vsyn_update_system {
+    sudo apt-get update && sudo apt-get upgrade -y
+}
+
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+    case $key in
+        -h|--help)
+        vsyn_usage
+        shift
+        ;;
+        -v|--version)
+        vsyn_version
+        shift
+        ;;
+        -l|--list)
+        vsyn_list_files
+        shift
+        ;;
+        -c|--count)
+        vsyn_count_files
+        shift
+        ;;
+        -f|--find)
+        vsyn_find_file "$2"
+        shift
+        shift
+        ;;
+        -e|--extension)
+        vsyn_list_by_extension "$2"
+        shift
+        shift
+        ;;
+        -s|--size)
+        vsyn_list_by_size "$2"
+        shift
+        shift
+        ;;
+        -u|--user)
+        vsyn_list_by_user "$2"
+        shift
+        shift
+        ;;
+        -g|--group)
+        vsyn_list_by_group "$2"
+        shift
+        shift
+        ;;
+        -o|--order)
+        vsyn_order "$2"
+        shift
+        shift
+        ;;
+        -p|--permissions)
+        vsyn_permissions
+        shift
+        ;;
+        -m|--modify-time)
+        vsyn_modify_time "$2"
+        shift
+        shift
+        ;;
+        -n|--newer)
+        vsyn_list_newer "$2"
+        shift
+        shift
+        ;;
+        -d|--delete)
+        vsyn_delete_file "$2"
+        shift
+        shift
+        ;;
+        -t|--type)
+        vsyn_list_by_type "$2"
+        shift
+        shift
+        ;;
+        -i|--system-info)
+        vsyn_system_info
+        shift
+        ;;
+        -x|--execute)
+        vsyn_execute_command "$2"
+        shift
+        shift
+        ;;
+        -b|--backup)
+        vsyn_backup_file "$2"
+        shift
+        shift
+        ;;
+        -y|--sync)
+        vsyn_sync_directories "$2" "$3"
+        shift
+        shift
+        shift
+        ;;
+        -z|--compress)
+        vsyn_compress_file "$2"
+        shift
+        shift
+        ;;
+	-U|--uncompress)
+        vsyn_uncompress_file "$2"
+        shift 
+        shift
+        ;;
+        -w|--watch)
+        vsyn_watch_file "$2"
+        shift
+        shift
+        ;;
+        -k|--kill)
+	vsyn_kill_process "$2"
+        shift
+        shift
+        ;;
+	-P|-listp)
+	ps -e
+	shift
+	;;
+        -q|--query)
+        vsyn_query_service "$2"
+        shift
+        shift
+        ;;
+        -a|--archive)
+        vsyn_create_archive
+        shift
+        ;;
+        -j|--extract)
+        vsyn_extract_archive "$2"
+        shift
+        shift
+        ;;
+        -O|--open)
+        vsyn_open_file "$2"
+        shift
+        shift
+        ;;
+        -r|--update)
+        vsyn_update_system
+        shift
+        shift
+        ;;
+        -g|--git)
+        vsyn_init_git
+        shift
+        ;;
+	-H|--hidden)
+        vsyn_display_hidden
+	shift 
+        shift
+        ;;            
+        *)
+        echo "Invalid option: $key"
+        vsyn_usage
+        exit 1
+        ;;
+    esac
+done
